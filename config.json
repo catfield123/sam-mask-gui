@@ -1,10 +1,9 @@
 {
-  "sam2_checkpoint_path": "",
-  "checkpoint_path": "",
+  "sam2_checkpoint_path": "./data/sam2/sam2.1_hiera_small.pt",
   "sam3_checkpoint_path": null,
   "sam3_bpe_path": null,
   "keep_models_loaded": false,
   "max_side": 0,
-  "images_dir": null,
+  "images_dir": "/Users/dipspb/Downloads/nice_pics",
   "save_dir": null
 }

@@ -31,7 +31,7 @@ class TestConfigServiceLoad:
         self, config_service: ConfigService, temp_config_path: Path
     ) -> None:
         """When config file has valid JSON, load returns the parsed dict."""
-        data = {"max_side": 1024, "checkpoint_path": "/some/path"}
+        data = {"max_side": 1024, "sam2_checkpoint_path": "/some/path"}
         temp_config_path.write_text(json.dumps(data), encoding="utf-8")
         assert config_service.load() == data
 

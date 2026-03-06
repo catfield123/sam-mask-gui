@@ -164,7 +164,6 @@ class SettingsController:
         self._cfg.save(
             {
                 "sam2_checkpoint_path": ws.get("checkpoint_path", ""),
-                "checkpoint_path": ws.get("checkpoint_path", ""),
                 "sam3_checkpoint_path": ws.get("sam3_checkpoint_path"),
                 "sam3_bpe_path": ws.get("sam3_bpe_path"),
                 "keep_models_loaded": ws.get("keep_models_loaded", False),
