@@ -32,6 +32,7 @@ def install_triton_stub_if_needed() -> None:
 
     language = types.ModuleType("triton.language")
     language.constexpr = type(None)  # for annotations like horizontal: tl.constexpr
+    language.dtype = type(None)  # torch._dynamo may add triton.language.dtype to common_constant_types
 
     stub = types.ModuleType("triton")
     stub.jit = lambda f: f  # no-op so @triton.jit def ... in vendor edt.py just defines the function
