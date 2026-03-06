@@ -27,7 +27,7 @@ GUI application for creating masks from images using [SAM2](https://github.com/f
 ### 1. Clone the repository
 
 ```bash
-git clone <this-repo-url>
+git clone https://github.com/catfield123/sam-mask-gui
 cd auto_segmentation
 ```
 
@@ -132,6 +132,12 @@ auto_segmentation/
 ```
 
 ## Development
+
+Dev dependencies (pytest, ruff, mypy) are defined in `pyproject.toml` under `[project.optional-dependencies]` → `dev`. Install them with:
+
+```bash
+uv pip install -e ".[dev]"
+```
 
 From the project root with the venv activated:
 
