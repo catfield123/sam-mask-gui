@@ -5,6 +5,7 @@ from typing import Dict, Optional, Tuple
 
 from src.logging_config import get_logger
 from src.utils.decord_stub import install_decord_stub_if_needed
+from src.utils.triton_stub import install_triton_stub_if_needed
 
 logger = get_logger(__name__)
 
@@ -32,10 +33,10 @@ def check_sam2_installed() -> Tuple[bool, Optional[str]]:
 def check_sam3_installed() -> Tuple[bool, Optional[str]]:
     """Check if SAM3 package is installed and usable for image inference.
 
-    We import only sam3.model_builder. Vendor's import chain pulls decord
-    (model_builder → sam3_image → collator → sam3_image_dataset). We install
-    a decord stub when decord is not available (e.g. macOS) so the import
-    succeeds; our app only uses image path, not video.
+    We import only sam3.model_builder. Vendor's import chain pulls decord and
+    triton (model_builder → … → sam3_tracker_utils → edt). We install decord
+    and triton stubs when unavailable (e.g. macOS) so the import succeeds; our
+    image workflow never calls edt/tracker code.
 
     Returns:
         - tuple[bool, str | None]: (is_installed, error_message)
@@ -44,6 +45,7 @@ def check_sam3_installed() -> Tuple[bool, Optional[str]]:
     """
     logger.debug("Checking if SAM3 package is installed (model_builder path)")
     install_decord_stub_if_needed()
+    install_triton_stub_if_needed()
     try:
         importlib.import_module("sam3.model_builder")
         logger.info("SAM3 package is installed")
