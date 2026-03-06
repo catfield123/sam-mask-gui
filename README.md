@@ -57,7 +57,7 @@ The app works with the external `sam2` and `sam3` packages. You can install them
 
 ```bash
 uv pip install -e vendor/sam2
-# Optional, for text prompts and SAM3 features:
+# Optional, for text prompts:
 uv pip install -e vendor/sam3
 ```
 
