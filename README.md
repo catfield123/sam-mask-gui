@@ -86,7 +86,7 @@ source .venv/bin/activate   # Linux/macOS
 uv pip install -e .
 ```
 
-This installs the project in editable mode and all dependencies from `pyproject.toml` (PyQt6, torch, numpy, SAM3-related libs like einops/decord, and setuptools &lt;82 for SAM3 compatibility).
+This installs the project in editable mode and all dependencies from `pyproject.toml` (PyQt6, torch, numpy, SAM3-related libs like einops, and setuptools &lt;82 for SAM3 compatibility).
 
 ### 3. Install SAM2 and/or SAM3 (optional)
 

@@ -13,10 +13,9 @@ dependencies = [
     "Pillow>=10.0.0",
     # SAM3-related (needed when using SAM3 from vendor or external install)
     "einops>=0.8.0",
-    "decord>=0.6.0",
     "pycocotools>=2.0.0",
     "psutil>=7.0.0",
-    # SAM3 / some SAM3 libs break with setuptools 82+
+    # Some SAM3 libs break with setuptools >=82.0.0
     "setuptools>=71.0.0,<82.0.0",
 ]
 

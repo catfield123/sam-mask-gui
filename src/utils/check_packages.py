@@ -1,8 +1,10 @@
 """Utility for checking if SAM2 and SAM3 packages are installed."""
 
+import importlib
 from typing import Dict, Optional, Tuple
 
 from src.logging_config import get_logger
+from src.utils.decord_stub import install_decord_stub_if_needed
 
 logger = get_logger(__name__)
 
@@ -28,17 +30,22 @@ def check_sam2_installed() -> Tuple[bool, Optional[str]]:
 
 
 def check_sam3_installed() -> Tuple[bool, Optional[str]]:
-    """Check if SAM3 package is installed.
+    """Check if SAM3 package is installed and usable for image inference.
+
+    We import only sam3.model_builder. Vendor's import chain pulls decord
+    (model_builder → sam3_image → collator → sam3_image_dataset). We install
+    a decord stub when decord is not available (e.g. macOS) so the import
+    succeeds; our app only uses image path, not video.
 
     Returns:
         - tuple[bool, str | None]: (is_installed, error_message)
           If installed, returns (True, None).
           If not installed, returns (False, error_message).
     """
-    logger.debug("Checking if SAM3 package is installed")
+    logger.debug("Checking if SAM3 package is installed (model_builder path)")
+    install_decord_stub_if_needed()
     try:
-        import sam3  # noqa: F401  # type: ignore[import-not-found]
-
+        importlib.import_module("sam3.model_builder")
         logger.info("SAM3 package is installed")
         return True, None
     except ImportError as e:
