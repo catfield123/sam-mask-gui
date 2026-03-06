@@ -1,14 +1,43 @@
-# SAM2/SAM3 Mask Creation GUI
+<h1 align="center">SAM2/SAM3 Mask Creation GUI</h1>
 
-[![Python](https://img.shields.io/badge/python-3.12+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-EE4C2C?logo=pytorch&logoColor=white)](https://pytorch.org/)
-[![PyQt6](https://img.shields.io/badge/PyQt6-6.6+-41CD52?logo=qt&logoColor=white)](https://www.riverbankcomputing.com/software/pyqt/)
-[![OpenCV](https://img.shields.io/badge/OpenCV-4.8+-5C3EE8?logo=opencv&logoColor=white)](https://opencv.org/)
-[![NumPy](https://img.shields.io/badge/NumPy-1.24+-013243?logo=numpy&logoColor=white)](https://numpy.org/)
-[![uv](https://img.shields.io/badge/uv-package%20manager-FFD43B?logo=python&logoColor=black)](https://github.com/astral-sh/uv)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+<p align="center">
+<a href="https://www.python.org/">
+    <img src="https://img.shields.io/badge/python-3.12+-34D058?color=%2334D058&label=python" alt="Python">
+</a>
+<a href="https://pytorch.org/">
+    <img src="https://img.shields.io/badge/PyTorch-2.0+-34D058?color=%2334D058" alt="PyTorch">
+</a>
+<a href="https://www.riverbankcomputing.com/software/pyqt/">
+    <img src="https://img.shields.io/badge/PyQt6-6.6+-34D058?color=%2334D058" alt="PyQt6">
+</a>
+<a href="https://opencv.org/">
+    <img src="https://img.shields.io/badge/OpenCV-4.8+-34D058?color=%2334D058" alt="OpenCV">
+</a>
+<a href="https://numpy.org/">
+    <img src="https://img.shields.io/badge/NumPy-1.24+-34D058?color=%2334D058" alt="NumPy">
+</a>
+<a href="https://github.com/astral-sh/uv">
+    <img src="https://img.shields.io/badge/uv-package%20manager-34D058?color=%2334D058" alt="uv">
+</a>
+<a href="https://opensource.org/licenses/MIT">
+    <img src="https://img.shields.io/badge/License-MIT-34D058?color=%2334D058" alt="License">
+</a>
+</p>
 
-GUI application for creating masks from images using [SAM2](https://github.com/facebookresearch/sam2) and [SAM3](https://github.com/facebookresearch/sam3).
+## Contents
+
+- [Features](#features)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Run](#run)
+- [Usage](#usage)
+  - [Keyboard shortcuts](#keyboard-shortcuts)
+- [Project structure](#project-structure)
+- [Development](#development)
+- [Memory](#memory)
+- [BPE path (SAM3)](#bpe-path-sam3)
+- [Troubleshooting](#troubleshooting)
+- [License](#license)
 
 ## Features
 
