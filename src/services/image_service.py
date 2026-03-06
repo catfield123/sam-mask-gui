@@ -3,11 +3,15 @@
 from pathlib import Path
 from typing import List
 
+from src.logging_config import get_logger
+
 try:
     from src.sam2.config import IMG_EXTS
 except Exception:
     # Keep image discovery working even when the optional SAM2 package cannot be imported.
     IMG_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff"}
+
+logger = get_logger(__name__)
 
 
 class ImageService:
@@ -23,10 +27,14 @@ class ImageService:
         Returns:
             - list[Path]: Sorted list of image file paths.
         """
+        logger.debug("find_images: scanning %s", directory)
         if not directory.exists() or not directory.is_dir():
+            logger.debug("find_images: directory does not exist or is not a dir")
             return []
 
-        return [p for p in sorted(directory.iterdir()) if p.suffix.lower() in IMG_EXTS and p.is_file()]
+        paths = [p for p in sorted(directory.iterdir()) if p.suffix.lower() in IMG_EXTS and p.is_file()]
+        logger.info("find_images: found %s images in %s", len(paths), directory)
+        return paths
 
     @staticmethod
     def get_mask_path(image_path: Path, save_dir: Path) -> Path:

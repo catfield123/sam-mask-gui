@@ -1,10 +1,12 @@
 """Configuration persistence and settings dialog integration."""
 
-
 from PyQt6.QtCore import QTimer
 
 from src.gui.dialogs import SettingsDialog
+from src.logging_config import get_logger
 from src.services import ConfigService
+
+logger = get_logger(__name__)
 
 
 class SettingsController:
@@ -34,6 +36,7 @@ class SettingsController:
         self._cfg = config_service
         self._get = get_window_state
         self._set = set_window_state
+        logger.debug("SettingsController initialised")
 
     # ------------------------------------------------------------------
     # Settings dialog
@@ -50,6 +53,7 @@ class SettingsController:
         Returns:
             bool: True if the user accepted the dialog and settings were applied.
         """
+        logger.debug("show_settings: opening dialog")
         ws = self._get()
         dialog = SettingsDialog(
             parent_widget,
@@ -59,8 +63,10 @@ class SettingsController:
             max_side=ws.get("max_side", 1024),
         )
         if not dialog.exec():
+            logger.debug("show_settings: user cancelled")
             return False
 
+        logger.debug("show_settings: user accepted, applying updates")
         old_ckpt = ws.get("checkpoint_path", "")
         old_sam3_ckpt = ws.get("sam3_checkpoint_path")
         old_sam3_bpe = ws.get("sam3_bpe_path")
@@ -78,6 +84,7 @@ class SettingsController:
             "max_side": new_max,
         }
         self._set(updates)
+        logger.info("Settings applied: checkpoint=%s, sam3_ckpt=%s, max_side=%s", new_ckpt, new_sam3_ckpt, new_max)
         self.save_config()
 
         # Normalize for comparison: strip paths, treat None and "" as equivalent.
@@ -91,6 +98,7 @@ class SettingsController:
         ws = self._get()  # re-read after set
 
         if ckpt_changed or sam3_changed or max_changed:
+            logger.debug("Settings changed (ckpt=%s, sam3=%s, max=%s), releasing predictors", ckpt_changed, sam3_changed, max_changed)
             release_predictors_cb = ws.get("release_predictors_cb")
             if callable(release_predictors_cb):
                 release_predictors_cb()
@@ -116,8 +124,10 @@ class SettingsController:
             - load_images_cb (callable): Called (deferred) to populate the image list.
             - check_masks_cb (callable): Called (deferred) to scan for saved masks.
         """
+        logger.debug("load_config: loading from config service")
         config = self._cfg.load()
         if not config:
+            logger.debug("load_config: no config, skipping restore")
             return
 
         ckpt = self._cfg.get_checkpoint_path(config)
@@ -140,6 +150,7 @@ class SettingsController:
         updates["save_dir"] = save_dir
 
         self._set(updates)
+        logger.info("load_config: restored state (ckpt=%s, sam3_ckpt=%s, images_dir=%s, save_dir=%s)", ckpt, sam3_ckpt, images_dir, save_dir)
 
         if images_dir:
             QTimer.singleShot(0, load_images_cb)
@@ -148,6 +159,7 @@ class SettingsController:
 
     def save_config(self) -> None:
         """Persist the current application state to the config file."""
+        logger.debug("save_config: persisting state")
         ws = self._get()
         self._cfg.save(
             {

@@ -1,6 +1,5 @@
 """Mask prediction, keypoint handling, brush integration, grow/shrink, and mask I/O."""
 
-import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Optional
 
@@ -8,11 +7,12 @@ import numpy as np
 from PyQt6.QtWidgets import QMessageBox
 
 from src.gui.controllers.undo_controller import UndoController
+from src.logging_config import get_logger
 from src.models import ImageState, Keypoint, KeypointType
 from src.models.session_models import BatchSession, FrameBackup
 from src.services import ImageService, MaskService
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 if TYPE_CHECKING:
     from src.sam2 import SAM2PredictorWrapper  # noqa: F401
@@ -214,6 +214,7 @@ class MaskController:
                 QMessageBox.warning(parent_widget, "Error", "Please enter a text prompt.")
             return
 
+        logger.info("segment_by_prompt: prompt=%r, image_path=%s", prompt.strip(), image_path)
         self._undo.push_undo(state)
 
         try:
@@ -260,10 +261,9 @@ class MaskController:
             self._viewer.set_keypoints([])
             self._viewer.set_mask(state.mask)
         except Exception as e:
+            logger.error("Error segmenting by prompt: %s", e, exc_info=True)
             if parent_widget:
                 QMessageBox.critical(parent_widget, "Error", f"Failed to segment by prompt: {e}")
-            else:
-                logger.error("Error segmenting by prompt: %s", e)
 
     def on_mask_variant_selected(self, mask_idx: int):
         """Handle the user picking a different mask candidate.

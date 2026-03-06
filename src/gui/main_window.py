@@ -5,6 +5,10 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 
 import cv2
+
+from src.logging_config import get_logger
+
+logger = get_logger(__name__)
 import numpy as np
 import torch
 from PyQt6.QtCore import QEventLoop, Qt
@@ -52,6 +56,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         """Initialise the window, build UI, create controllers, and load config."""
         super().__init__()
+        logger.debug("MainWindow __init__ started")
         self.setWindowTitle("SAM2/SAM3 Image Segmentation")
         self.setGeometry(100, 100, 1400, 900)
 
@@ -122,9 +127,15 @@ class MainWindow(QMainWindow):
         self._update_prompt_ui_availability()
 
         # Check packages and show warnings
+        logger.info("Checking SAM2/SAM3 package availability at startup")
         sam2_installed, sam2_msg = check_sam2_installed()
+        sam3_installed, sam3_msg = check_sam3_installed()
+        logger.info("Startup package check: SAM2=%s, SAM3=%s", sam2_installed, sam3_installed)
+        if not sam3_installed:
+            logger.warning("SAM3 is not installed or failed to import: %s", sam3_msg)
 
         if not sam2_installed:
+            logger.warning("SAM2 is not installed: %s", sam2_msg)
             QMessageBox.warning(
                 self,
                 "SAM2 Package Warning",
@@ -733,6 +744,7 @@ class MainWindow(QMainWindow):
 
     def _release_all_predictors(self) -> None:
         """Release both predictor runtimes and clear the active predictor state."""
+        logger.info("Releasing all predictors (SAM2, SAM3)")
         self._release_predictor_resources(self.predictor)
         self._release_predictor_resources(self.sam3_predictor)
         self.predictor = None
@@ -740,6 +752,7 @@ class MainWindow(QMainWindow):
         self.mask_service = None
         self._active_predictor_kind = None
         self._refresh_model_status_indicators()
+        logger.debug("All predictors released")
 
     def _get_display_predictor(self):
         """Return the predictor that should currently drive the viewer."""
@@ -751,6 +764,7 @@ class MainWindow(QMainWindow):
 
     def _with_loading_progress(self, title: str, label: str, loader: Callable[[], Any]):
         """Show a busy progress dialog while a model loads in a worker thread."""
+        logger.info("Starting model load with progress dialog: %s", title)
         progress = QProgressDialog(label, None, 0, 0, self)
         progress.setWindowTitle(title)
         progress.setWindowModality(Qt.WindowModality.WindowModal)
@@ -781,7 +795,9 @@ class MainWindow(QMainWindow):
             QApplication.processEvents()
 
         if result["error"] is not None:
+            logger.error("Model load failed (%s): %s", title, result["error"])
             raise RuntimeError(result["error"])
+        logger.info("Model load completed: %s", title)
         return result["model"]
 
     @staticmethod
@@ -805,16 +821,22 @@ class MainWindow(QMainWindow):
 
     def _validate_sam2_setup(self) -> tuple[bool, str]:
         """Return whether SAM2 is configured well enough to be loaded."""
+        logger.debug("Validating SAM2 setup (checkpoint_path=%s)", self.checkpoint_path)
         sam2_installed, sam2_msg = check_sam2_installed()
         if not sam2_installed:
+            logger.info("SAM2 validation failed: package not installed — %s", sam2_msg)
             return False, sam2_msg or "SAM2 package is not installed."
         if not self.checkpoint_path:
+            logger.info("SAM2 validation failed: checkpoint path not configured")
             return False, "SAM2 checkpoint path is not configured."
         ckpt_path = Path(self.checkpoint_path)
         if not ckpt_path.exists():
+            logger.info("SAM2 validation failed: checkpoint file does not exist: %s", ckpt_path)
             return False, f"SAM2 checkpoint file does not exist: {ckpt_path}"
         if not ckpt_path.is_file():
+            logger.info("SAM2 validation failed: checkpoint path is not a file: %s", ckpt_path)
             return False, f"SAM2 checkpoint path is not a file: {ckpt_path}"
+        logger.debug("SAM2 setup valid: %s", ckpt_path)
         return True, "SAM2 is configured and ready to load."
 
     def _has_valid_sam2_checkpoint(self) -> bool:
@@ -824,27 +846,40 @@ class MainWindow(QMainWindow):
 
     def _validate_sam3_setup(self) -> tuple[bool, str]:
         """Return whether SAM3 is configured well enough to be loaded."""
+        logger.debug(
+            "Validating SAM3 setup (checkpoint_path=%s, bpe_path=%s)",
+            self.sam3_checkpoint_path,
+            self.sam3_bpe_path,
+        )
         sam3_installed, sam3_msg = check_sam3_installed()
         if not sam3_installed:
+            logger.info("SAM3 validation failed: package not installed — %s", sam3_msg)
             return False, sam3_msg or "SAM3 package is not installed."
         if not self.sam3_checkpoint_path:
+            logger.info("SAM3 validation failed: checkpoint path not configured")
             return False, "SAM3 checkpoint path is not configured."
         ckpt_path = Path(self.sam3_checkpoint_path)
         if not ckpt_path.exists():
+            logger.info("SAM3 validation failed: checkpoint file does not exist: %s", ckpt_path)
             return False, f"SAM3 checkpoint file does not exist: {ckpt_path}"
         if not ckpt_path.is_file():
+            logger.info("SAM3 validation failed: checkpoint path is not a file: %s", ckpt_path)
             return False, f"SAM3 checkpoint path is not a file: {ckpt_path}"
         if self.sam3_bpe_path:
             bpe_path = Path(self.sam3_bpe_path)
             if not bpe_path.exists():
+                logger.info("SAM3 validation failed: BPE file does not exist: %s", bpe_path)
                 return False, f"SAM3 BPE file does not exist: {bpe_path}"
             if not bpe_path.is_file():
+                logger.info("SAM3 validation failed: BPE path is not a file: %s", bpe_path)
                 return False, f"SAM3 BPE path is not a file: {bpe_path}"
             if not bpe_path.name.endswith(".txt.gz"):
+                logger.info("SAM3 validation failed: invalid BPE file name: %s", bpe_path.name)
                 return (
                     False,
                     "SAM3 BPE file has an invalid name. Expected something like 'bpe_simple_vocab_16e6.txt.gz'.",
                 )
+        logger.debug("SAM3 setup valid: checkpoint=%s", ckpt_path)
         return True, "SAM3 is configured and ready to load."
 
     def _can_use_sam3(self) -> bool:
@@ -880,6 +915,7 @@ class MainWindow(QMainWindow):
             return
         sam2_state, sam2_tooltip = self._get_sam2_status()
         sam3_state, sam3_tooltip = self._get_sam3_status()
+        logger.debug("Model status: SAM2=%s, SAM3=%s", sam2_state, sam3_state)
         self._apply_status_badge(
             self._sam2_status_dot,
             self._sam2_status_badge,
@@ -895,14 +931,21 @@ class MainWindow(QMainWindow):
 
     def _build_sam2_predictor(self):
         """Create SAM2 with the stored configuration."""
+        logger.info("Building SAM2 predictor (checkpoint=%s, max_side=%s)", self.checkpoint_path, self.max_side)
         from src.sam2 import SAM2PredictorWrapper
 
         predictor = SAM2PredictorWrapper(self.checkpoint_path)
         predictor.set_max_side(self.max_side)
+        logger.info("SAM2 predictor built successfully")
         return predictor
 
     def _build_sam3_predictor(self):
         """Create SAM3 with the stored configuration and BPE fallback."""
+        logger.info(
+            "Building SAM3 predictor (checkpoint=%s, bpe_path=%s)",
+            self.sam3_checkpoint_path,
+            self.sam3_bpe_path,
+        )
         from src.sam3 import SAM3PredictorWrapper
 
         try:
@@ -912,18 +955,25 @@ class MainWindow(QMainWindow):
             )
         except ValueError as exc:
             if self.sam3_bpe_path and "Invalid SAM3 BPE file" in str(exc):
+                logger.warning("SAM3 BPE invalid, retrying without BPE: %s", exc)
                 predictor = SAM3PredictorWrapper(
                     checkpoint_path=self.sam3_checkpoint_path,
                     bpe_path=None,
                 )
             else:
                 raise
+        except Exception as exc:
+            logger.error("SAM3 predictor construction failed: %s", exc, exc_info=True)
+            raise
         predictor.set_max_side(self.max_side)
+        logger.info("SAM3 predictor built successfully")
         return predictor
 
     def _ensure_sam2_loaded(self, reload_current: bool = False) -> bool:
         """Load SAM2 on demand and release SAM3 if it is currently active."""
+        logger.debug("_ensure_sam2_loaded(reload_current=%s)", reload_current)
         if not self._has_valid_sam2_checkpoint():
+            logger.info("SAM2 not loaded: checkpoint not valid, showing warning")
             QMessageBox.warning(
                 self,
                 "SAM2 Not Configured",
@@ -931,7 +981,9 @@ class MainWindow(QMainWindow):
             )
             return False
         if self.predictor is None:
+            logger.info("SAM2 predictor is None, loading SAM2 model")
             if self.sam3_predictor is not None and not self.keep_models_loaded:
+                logger.debug("Releasing SAM3 to free memory before loading SAM2")
                 self._release_predictor_resources(self.sam3_predictor)
                 self.sam3_predictor = None
             try:
@@ -943,11 +995,13 @@ class MainWindow(QMainWindow):
                 )
             except Exception as exc:
                 self._sam2_last_error = str(exc)
+                logger.error("Failed to load SAM2 model: %s", exc, exc_info=True)
                 self._refresh_model_status_indicators()
                 QMessageBox.critical(self, "Error", f"Failed to load SAM2 model:\n\n{exc}")
                 return False
             self.predictor = predictor
             self._sam2_last_error = None
+            logger.info("SAM2 model loaded successfully")
         if self.predictor is not None:
             self.mask_service = MaskService(self.predictor)
         self._active_predictor_kind = "sam2"
@@ -959,7 +1013,10 @@ class MainWindow(QMainWindow):
 
     def _ensure_sam3_loaded(self, reload_current: bool = False) -> bool:
         """Load SAM3 on demand and release SAM2 if it is currently active."""
+        logger.debug("_ensure_sam3_loaded(reload_current=%s)", reload_current)
         if not self._can_use_sam3():
+            valid, msg = self._validate_sam3_setup()
+            logger.info("SAM3 not loaded: validation failed — %s", msg)
             QMessageBox.warning(
                 self,
                 "SAM3 Not Configured",
@@ -967,7 +1024,9 @@ class MainWindow(QMainWindow):
             )
             return False
         if self.sam3_predictor is None:
+            logger.info("SAM3 predictor is None, loading SAM3 model")
             if self.predictor is not None and not self.keep_models_loaded:
+                logger.debug("Releasing SAM2 to free memory before loading SAM3")
                 self._release_predictor_resources(self.predictor)
                 self.predictor = None
             try:
@@ -979,11 +1038,13 @@ class MainWindow(QMainWindow):
                 )
             except Exception as exc:
                 self._sam3_last_error = str(exc)
+                logger.error("Failed to load SAM3 model: %s", exc, exc_info=True)
                 self._refresh_model_status_indicators()
                 QMessageBox.critical(self, "Error", f"Failed to load SAM3 model:\n\n{exc}")
                 return False
             self.sam3_predictor = sam3_predictor
             self._sam3_last_error = None
+            logger.info("SAM3 model loaded successfully")
         if self.sam3_predictor is not None:
             self.mask_service = MaskService(self.sam3_predictor)
         self._active_predictor_kind = "sam3"
@@ -995,14 +1056,20 @@ class MainWindow(QMainWindow):
 
     def _ensure_default_predictor_loaded(self) -> bool:
         """Load the default viewer predictor when nothing is active yet."""
+        logger.debug("_ensure_default_predictor_loaded (active=%s)", self._active_predictor_kind)
         if self._active_predictor_kind == "sam2" and self.predictor is not None:
+            logger.debug("Default predictor: SAM2 already loaded")
             return True
         if self._active_predictor_kind == "sam3" and self.sam3_predictor is not None:
+            logger.debug("Default predictor: SAM3 already loaded")
             return True
         if self._has_valid_sam2_checkpoint():
+            logger.debug("Loading default predictor: trying SAM2 first")
             return self._ensure_sam2_loaded(reload_current=False)
         if self._can_use_sam3():
+            logger.debug("Loading default predictor: trying SAM3")
             return self._ensure_sam3_loaded(reload_current=False)
+        logger.warning("No valid SAM2 or SAM3 setup; default predictor could not be loaded")
         return False
 
     def _try_keep_both_models_loaded(self) -> bool:
@@ -1426,11 +1493,14 @@ class MainWindow(QMainWindow):
 
     def _load_images(self):
         """Scan the images directory and populate the image list."""
+        logger.debug("_load_images: calling list controller")
         self._list_ctrl.load_images(self._on_image_selected, parent_widget=self)
         self._update_action_buttons()
+        logger.debug("_load_images: done")
 
     def _check_all_masks(self):
         """Scan all image states and load saved masks from disk."""
+        logger.debug("_check_all_masks: scanning for saved masks")
         self._mask_ctrl.check_and_load_masks_for_all(
             self.save_dir,
             self.mask_service,
@@ -1448,23 +1518,28 @@ class MainWindow(QMainWindow):
         """
         if img_path is not None:
             self.current_image_path = img_path
+        logger.debug("_load_current_image: path=%s", self.current_image_path)
 
         if self.predictor is None and self.sam3_predictor is None:
             if not self._ensure_default_predictor_loaded():
+                logger.debug("_load_current_image: no predictor, aborting")
                 return
 
         display_predictor = self._get_display_predictor()
         if self.current_image_path is None or display_predictor is None:
+            logger.debug("_load_current_image: no path or predictor")
             return
 
         state = self.image_states.get(self.current_image_path)
         if state is None:
+            logger.debug("_load_current_image: no state for path")
             return
 
         viewer = self._center.image_viewer
 
         try:
             old_scaled_size = state.scaled_size
+            logger.debug("_load_current_image: loading image with predictor")
             scaled_img, original_size, scale_factor = display_predictor.load_image(str(self.current_image_path))
             new_scaled_size = display_predictor.get_scaled_size()
             self._rescale_state_for_new_scale(state, new_scaled_size, scale_factor)

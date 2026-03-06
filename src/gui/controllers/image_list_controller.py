@@ -7,8 +7,11 @@ from PyQt6.QtCore import QSize, Qt, QTimer
 from PyQt6.QtGui import QIcon, QPixmap
 from PyQt6.QtWidgets import QListWidgetItem, QMessageBox
 
+from src.logging_config import get_logger
 from src.models import ImageState
 from src.services import ImageService
+
+logger = get_logger(__name__)
 
 
 class ImageListController:
@@ -65,12 +68,15 @@ class ImageListController:
             - on_image_selected_cb (callable): Slot for ``currentItemChanged``.
             - parent_widget (QWidget | None): Parent for info/error dialogs.
         """
+        logger.debug("load_images: get_state")
         images_dir, save_dir, image_states, mask_service = self._get_state()
         if images_dir is None:
+            logger.debug("load_images: no images_dir")
             return
 
         image_paths = ImageService.find_images(images_dir)
         if not image_paths:
+            logger.info("load_images: no images found in %s", images_dir)
             QMessageBox.information(parent_widget, "No Images", "No images found in selected folder.")
             return
 

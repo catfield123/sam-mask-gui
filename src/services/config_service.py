@@ -2,11 +2,12 @@
 
 import contextlib
 import json
-import logging
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-logger = logging.getLogger(__name__)
+from src.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 class ConfigService:
@@ -23,6 +24,7 @@ class ConfigService:
             - config_path (Path): Path to the ``config.json`` file.
         """
         self.config_path = config_path
+        logger.debug("ConfigService initialised with path=%s", config_path)
 
     def load(self) -> Dict[str, Any]:
         """Load configuration from disk.
@@ -31,12 +33,16 @@ class ConfigService:
             - dict: Parsed config dictionary, or empty dict if the file is
               missing or corrupted (corrupted files are deleted automatically).
         """
+        logger.debug("Loading config from %s", self.config_path)
         if not self.config_path.exists():
+            logger.debug("Config file does not exist, returning empty dict")
             return {}
 
         try:
             with open(self.config_path, encoding="utf-8") as f:
-                return json.load(f)
+                data = json.load(f)
+            logger.info("Config loaded successfully from %s (keys: %s)", self.config_path, list(data.keys()))
+            return data
         except (json.JSONDecodeError, KeyError, ValueError, OSError) as e:
             logger.error("Error loading config: %s. Deleting config file.", e)
             with contextlib.suppress(Exception):
@@ -52,9 +58,11 @@ class ConfigService:
         Returns:
             - bool: ``True`` on success, ``False`` on failure.
         """
+        logger.debug("Saving config to %s", self.config_path)
         try:
             with open(self.config_path, "w", encoding="utf-8") as f:
                 json.dump(config, f, indent=2, ensure_ascii=False)
+            logger.info("Config saved successfully to %s", self.config_path)
             return True
         except Exception as e:
             logger.error("Error saving config: %s", e)

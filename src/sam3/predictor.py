@@ -2,7 +2,6 @@
 
 import gc
 import importlib
-import logging
 from pathlib import Path
 from typing import List, Optional, Tuple
 
@@ -11,10 +10,11 @@ import numpy as np
 import torch
 from PIL import Image
 
+from src.logging_config import get_logger
 from src.models.predictor_base import BasePredictor
 from src.utils.check_packages import check_sam3_installed
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class SAM3PredictorWrapper(BasePredictor):
@@ -40,14 +40,16 @@ class SAM3PredictorWrapper(BasePredictor):
             - device (str): Torch device ("cuda" or "cpu").
               Falls back to CPU if CUDA is unavailable.
         """
+        logger.debug("SAM3PredictorWrapper.__init__(checkpoint_path=%s, bpe_path=%s, device=%s)", checkpoint_path, bpe_path, device)
         # Check if SAM3 is installed
         is_installed, error_msg = check_sam3_installed()
         if not is_installed:
+            logger.error("SAM3 package not installed: %s", error_msg)
             raise ImportError(f"SAM3 package not installed. {error_msg}")
 
         if device == "cuda" and not torch.cuda.is_available():
             device = "cpu"
-            logger.info("CUDA not available, using CPU")
+            logger.info("CUDA not available, using CPU for SAM3")
 
         self.device = device
         self.checkpoint_path = checkpoint_path
@@ -67,8 +69,12 @@ class SAM3PredictorWrapper(BasePredictor):
                     "Leave BPE path empty to use SAM3 built-in defaults."
                 )
             logger.info("BPE tokenizer: %s", bpe_path)
+        else:
+            logger.debug("No BPE path; using SAM3 built-in defaults")
 
+        logger.debug("Calling _build_sam3_runtime(device=%s)", device)
         self._build_sam3_runtime(device)
+        logger.info("SAM3 runtime built successfully")
 
         self.current_image: Optional[np.ndarray] = None
         self.original_image: Optional[np.ndarray] = None
@@ -81,30 +87,56 @@ class SAM3PredictorWrapper(BasePredictor):
 
     def _build_sam3_runtime(self, device: str) -> None:
         """Build/rebuild the SAM3 model and processors on the requested device."""
-        build_sam3_image_model = importlib.import_module("sam3.model_builder").build_sam3_image_model
+        logger.debug("_build_sam3_runtime: importing sam3.model_builder")
+        try:
+            sam3_model_builder = importlib.import_module("sam3.model_builder")
+            build_sam3_image_model = sam3_model_builder.build_sam3_image_model
+        except Exception as e:
+            logger.error("Failed to import sam3.model_builder: %s", e, exc_info=True)
+            raise
 
         self.device = device
-        self.model = build_sam3_image_model(
-            bpe_path=self.bpe_path,
-            device=device,
-            eval_mode=True,
-            checkpoint_path=self.checkpoint_path,
-            load_from_HF=self._load_from_hf,
-            enable_segmentation=True,
-            # Prompt-only mode matches the lightweight image example from the
-            # official SAM3 README and avoids loading the extra interactive path.
-            enable_inst_interactivity=False,
-            compile=False,
-        )
+        logger.debug("_build_sam3_runtime: calling build_sam3_image_model(...)")
+        try:
+            self.model = build_sam3_image_model(
+                bpe_path=self.bpe_path,
+                device=device,
+                eval_mode=True,
+                checkpoint_path=self.checkpoint_path,
+                load_from_HF=self._load_from_hf,
+                enable_segmentation=True,
+                # Prompt-only mode matches the lightweight image example from the
+                # official SAM3 README and avoids loading the extra interactive path.
+                enable_inst_interactivity=False,
+                compile=False,
+            )
+        except Exception as e:
+            logger.error("build_sam3_image_model failed: %s", e, exc_info=True)
+            raise
 
+        logger.debug("_build_sam3_runtime: loading Sam3Processor")
         # Different sam3 package revisions expose this class in different modules.
         try:
             from sam3.model.sam3_image_processor import Sam3Processor  # type: ignore
-        except ImportError:
-            from sam3.processor import SAM3Processor as Sam3Processor  # type: ignore
-        self.processor = Sam3Processor(self.model, device=device)
+
+            logger.debug("_build_sam3_runtime: using sam3.model.sam3_image_processor.Sam3Processor")
+        except ImportError as e1:
+            logger.debug("Sam3Processor not in sam3.model.sam3_image_processor: %s, trying sam3.processor", e1)
+            try:
+                from sam3.processor import SAM3Processor as Sam3Processor  # type: ignore
+
+                logger.debug("_build_sam3_runtime: using sam3.processor.SAM3Processor")
+            except ImportError as e2:
+                logger.error("Could not import Sam3Processor from sam3.model or sam3.processor: %s; %s", e1, e2, exc_info=True)
+                raise
+        try:
+            self.processor = Sam3Processor(self.model, device=device)
+        except Exception as e:
+            logger.error("Sam3Processor(model, device=%s) failed: %s", device, e, exc_info=True)
+            raise
         self.inference_state = None
         self._image_state_ready = False
+        logger.debug("_build_sam3_runtime: done")
 
     def _fallback_to_cpu(self) -> None:
         """Rebuild SAM3 on CPU after a CUDA OOM."""
@@ -136,11 +168,14 @@ class SAM3PredictorWrapper(BasePredictor):
         Raises:
             - ValueError: If the image cannot be read.
         """
+        logger.debug("load_image: reading %s", image_path)
         img_bgr = cv2.imread(str(image_path))
         if img_bgr is None:
+            logger.error("Could not load image: %s", image_path)
             raise ValueError(f"Could not load image: {image_path}")
 
         img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+        logger.debug("load_image: set_image_from_array (max_side=%s)", self.max_side)
         self.set_image_from_array(img_rgb, self.max_side)
         # Return tuple for compatibility with load_image interface
         if self.current_image is None:

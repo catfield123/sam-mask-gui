@@ -1,7 +1,6 @@
 """Wrapper around the SAM2 image predictor with image scaling support."""
 
 import gc
-import logging
 from typing import List, Optional, Tuple
 
 import cv2
@@ -10,10 +9,11 @@ import torch
 from sam2.build_sam import build_sam2  # type: ignore[import-not-found]
 from sam2.sam2_image_predictor import SAM2ImagePredictor  # type: ignore[import-not-found]
 
+from src.logging_config import get_logger
 from src.models.predictor_base import BasePredictor
 from src.sam2.config import cfg_for_ckpt
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class SAM2PredictorWrapper(BasePredictor):
@@ -32,17 +32,25 @@ class SAM2PredictorWrapper(BasePredictor):
             - device (str): Torch device (``"cuda"`` or ``"cpu"``).
               Falls back to CPU if CUDA is unavailable.
         """
+        logger.debug("SAM2PredictorWrapper.__init__(ckpt_path=%s, device=%s)", ckpt_path, device)
         if device == "cuda" and not torch.cuda.is_available():
             device = "cpu"
-            logger.info("CUDA not available, using CPU")
+            logger.info("CUDA not available, using CPU for SAM2")
 
         self.device = device
         self.ckpt_path = ckpt_path
+        logger.debug("Resolving config for checkpoint: %s", ckpt_path)
         self.cfg = cfg_for_ckpt(ckpt_path)
 
         logger.info("Loading SAM2 model (checkpoint=%s, config=%s)", ckpt_path, self.cfg)
-        sam2_model = build_sam2(self.cfg, ckpt_path, device=device)
+        try:
+            sam2_model = build_sam2(self.cfg, ckpt_path, device=device)
+        except Exception as e:
+            logger.error("build_sam2 failed: %s", e, exc_info=True)
+            raise
+        logger.debug("SAM2 model built, wrapping with SAM2ImagePredictor")
         self.predictor = SAM2ImagePredictor(sam2_model)
+        logger.debug("SAM2 predictor ready")
 
         self.current_image: Optional[np.ndarray] = None
         self.original_image: Optional[np.ndarray] = None
@@ -72,12 +80,15 @@ class SAM2PredictorWrapper(BasePredictor):
         Raises:
             - ValueError: If the image cannot be read.
         """
+        logger.debug("load_image: reading %s", image_path)
         img_bgr = cv2.imread(str(image_path))
         if img_bgr is None:
+            logger.error("Could not load image: %s", image_path)
             raise ValueError(f"Could not load image: {image_path}")
 
         img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
         h0, w0 = img_rgb.shape[:2]
+        logger.debug("load_image: size %sx%s", w0, h0)
         self.original_size = (h0, w0)
 
         img_scaled = img_rgb
@@ -98,6 +109,7 @@ class SAM2PredictorWrapper(BasePredictor):
         self.current_image = img_scaled
 
         self.predictor.set_image(img_scaled)
+        logger.debug("load_image: set_image done, scaled_size=%s", self.scaled_size)
         return img_scaled, (h0, w0), scale
 
     def set_image_from_array(self, image: np.ndarray, max_side: int = 0):

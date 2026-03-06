@@ -11,7 +11,10 @@ import numpy as np
 import torch
 from sam2.build_sam import build_sam2_video_predictor  # type: ignore[import-not-found]
 
+from src.logging_config import get_logger
 from src.sam2.config import cfg_for_ckpt
+
+logger = get_logger(__name__)
 
 
 def _cleanup_gpu():
@@ -60,6 +63,7 @@ def propagate_masks_in_video(
     Raises:
         - ValueError: If inputs are empty or invalid.
     """
+    logger.info("propagate_masks_in_video: %s frames, %s conditioning masks", len(image_paths), len(conditioning_masks))
     if not image_paths:
         raise ValueError("No image paths provided")
     if not conditioning_masks:
@@ -67,9 +71,11 @@ def propagate_masks_in_video(
 
     if device == "cuda" and not torch.cuda.is_available():
         device = "cpu"
+        logger.info("CUDA not available, using CPU for video propagation")
 
     cfg = cfg_for_ckpt(ckpt_path)
     num_frames = len(image_paths)
+    logger.debug("propagate_masks_in_video: cfg=%s", cfg)
     conditioning_indices: Set[int] = set(conditioning_masks.keys())
 
     # Estimate the actual amount of work more closely than ``num_frames * 2``.
@@ -93,11 +99,13 @@ def propagate_masks_in_video(
         if progress_callback:
             progress_callback(0, 0, "Loading SAM2 video model…")
 
+        logger.debug("Building SAM2 video predictor (ckpt=%s, device=%s)", ckpt_path, device)
         predictor = build_sam2_video_predictor(
             cfg,
             ckpt_path,
             device=device,
         )
+        logger.info("SAM2 video predictor loaded")
 
         try:
             # ---- 3. Initialise inference state ----------------------------

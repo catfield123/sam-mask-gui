@@ -1,16 +1,15 @@
 """Application entry point."""
 
 import argparse
-import logging
 import sys
 from pathlib import Path
 
 from PyQt6.QtWidgets import QApplication
 
 from src.gui.main_window import MainWindow
-from src.logging_config import configure_logging
+from src.logging_config import configure_logging, get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def main() -> None:
@@ -19,11 +18,18 @@ def main() -> None:
     parser.add_argument(
         "--debug",
         action="store_true",
-        help="Enable debug logging (verbose trace of operations).",
+        default=True,
+        help="Enable debug logging (default: on). Use --no-debug to reduce log volume.",
+    )
+    parser.add_argument(
+        "--no-debug",
+        action="store_false",
+        dest="debug",
+        help="Disable debug logging (INFO and above only).",
     )
     args = parser.parse_args()
     configure_logging(debug=args.debug)
-    logger.info("Starting SAM2/SAM3 segmentation GUI")
+    logger.info("app_started", log_level="DEBUG" if args.debug else "INFO")
 
     app = QApplication(sys.argv)
     window = MainWindow()

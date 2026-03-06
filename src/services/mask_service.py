@@ -1,15 +1,15 @@
 """Service for loading, saving, and rescaling segmentation masks."""
 
-import logging
 from pathlib import Path
 from typing import Optional
 
 import cv2
 import numpy as np
 
+from src.logging_config import get_logger
 from src.models.predictor_base import BasePredictor
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class MaskService:
@@ -26,6 +26,7 @@ class MaskService:
             - predictor (BasePredictor): Predictor used for mask scaling.
         """
         self.predictor = predictor
+        logger.debug("MaskService initialised with predictor=%s", type(predictor).__name__)
 
     def load_mask(self, mask_path: Path) -> Optional[np.ndarray]:
         """Load a grayscale mask from disk.
@@ -36,10 +37,14 @@ class MaskService:
         Returns:
             - np.ndarray | None: Grayscale mask array, or ``None`` on failure.
         """
+        logger.debug("load_mask: %s", mask_path)
         try:
             mask = cv2.imread(str(mask_path), cv2.IMREAD_GRAYSCALE)
+            if mask is None:
+                logger.debug("load_mask: failed to read %s", mask_path)
             return mask if mask is not None else None
-        except Exception:
+        except Exception as e:
+            logger.debug("load_mask: exception for %s: %s", mask_path, e)
             return None
 
     def save_mask(self, mask: np.ndarray, mask_path: Path) -> bool:
@@ -52,10 +57,12 @@ class MaskService:
         Returns:
             - bool: ``True`` on success, ``False`` on failure.
         """
+        logger.debug("save_mask: %s (shape=%s)", mask_path, mask.shape if mask is not None else None)
         try:
             mask_path.parent.mkdir(parents=True, exist_ok=True)
             mask_upscaled = self.predictor.upscale_mask(mask)
             cv2.imwrite(str(mask_path), mask_upscaled)
+            logger.info("Mask saved: %s", mask_path)
             return True
         except Exception as e:
             logger.error("Error saving mask: %s", e)
