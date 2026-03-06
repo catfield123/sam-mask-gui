@@ -107,7 +107,7 @@ uv pip install -e /path/to/sam2
 
 ### 4. Download checkpoints
 
-- **SAM2**: e.g. [sam2.1_hiera_small.pt](https://github.com/facebookresearch/sam2) (balance of speed and quality). Place the file and set its path in Settings.
+- **SAM2**: Use the official [`download_ckpts.sh`](https://raw.githubusercontent.com/facebookresearch/sam2/refs/heads/main/checkpoints/download_ckpts.sh) script to download SAM 2.1 checkpoints, then set the downloaded `.pt` file path as `sam2_checkpoint_path` parameter value in `config.json`.
 - **SAM3**: Weights are hosted on [Hugging Face (facebook/sam3)](https://huggingface.co/facebook/sam3). The model is **gated**: you must open the model page, request access, and wait until your request is approved before you can download the checkpoint. Then set the checkpoint path in Settings (and optionally the BPE path; see below).
 
 ## Run
