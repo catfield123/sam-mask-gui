@@ -1,5 +1,5 @@
 [project]
-name = "sam2-gui"
+name = "sam-mask-gui"
 version = "0.1.0"
 description = "GUI application for creating masks from images using SAM2 and SAM3"
 requires-python = ">=3.12"
