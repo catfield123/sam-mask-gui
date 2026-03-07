@@ -35,7 +35,7 @@ def main() -> None:
     window = MainWindow()
     window.show()
 
-    if not window.checkpoint_path or not Path(window.checkpoint_path).exists():
+    if not window.sam2_checkpoint_path or not Path(window.sam2_checkpoint_path).exists():
         window.show_settings()
 
     sys.exit(app.exec())

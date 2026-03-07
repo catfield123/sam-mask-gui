@@ -69,7 +69,7 @@ class MainWindow(QMainWindow):
         self.current_image_path: Optional[Path] = None
         self.predictor: Optional[SAM2PredictorWrapper] = None
         self.mask_service: Optional[MaskService] = None
-        self.checkpoint_path: str = ""
+        self.sam2_checkpoint_path: str = ""
         self.sam3_predictor: Optional[SAM3PredictorWrapper] = None
         self.sam3_checkpoint_path: Optional[str] = None
         self.sam3_bpe_path: Optional[str] = None
@@ -312,7 +312,7 @@ class MainWindow(QMainWindow):
     def _get_window_state(self):
         """Return a snapshot dict of window-level state for SettingsController."""
         return {
-            "checkpoint_path": self.checkpoint_path,
+            "sam2_checkpoint_path": self.sam2_checkpoint_path,
             "sam3_checkpoint_path": self.sam3_checkpoint_path,
             "sam3_bpe_path": self.sam3_bpe_path,
             "keep_models_loaded": self.keep_models_loaded,
@@ -332,7 +332,7 @@ class MainWindow(QMainWindow):
         Args:
             - updates (dict): Mapping of attribute names to new values.
         """
-        sam2_keys = {"checkpoint_path"}
+        sam2_keys = {"sam2_checkpoint_path"}
         sam3_keys = {"sam3_checkpoint_path", "sam3_bpe_path"}
         if sam2_keys.intersection(updates):
             self._sam2_last_error = None
@@ -350,12 +350,12 @@ class MainWindow(QMainWindow):
         """Return the state tuple expected by :class:`PropagationController`.
 
         Returns:
-            tuple: ``(checkpoint_path, device, images_dir, save_dir,
+            tuple: ``(sam2_checkpoint_path, device, images_dir, save_dir,
                 image_states, sort_index, image_list, current_image_path,
                 predictor)``.
         """
         return (
-            self.checkpoint_path,
+            self.sam2_checkpoint_path,
             "cuda",
             self.images_dir,
             self.save_dir,
@@ -821,15 +821,15 @@ class MainWindow(QMainWindow):
 
     def _validate_sam2_setup(self) -> tuple[bool, str]:
         """Return whether SAM2 is configured well enough to be loaded."""
-        logger.debug("Validating SAM2 setup (checkpoint_path=%s)", self.checkpoint_path)
+        logger.debug("Validating SAM2 setup (sam2_checkpoint_path=%s)", self.sam2_checkpoint_path)
         sam2_installed, sam2_msg = check_sam2_installed()
         if not sam2_installed:
             logger.info("SAM2 validation failed: package not installed — %s", sam2_msg)
             return False, sam2_msg or "SAM2 package is not installed."
-        if not self.checkpoint_path:
+        if not self.sam2_checkpoint_path:
             logger.info("SAM2 validation failed: checkpoint path not configured")
             return False, "SAM2 checkpoint path is not configured."
-        ckpt_path = Path(self.checkpoint_path)
+        ckpt_path = Path(self.sam2_checkpoint_path)
         if not ckpt_path.exists():
             logger.info("SAM2 validation failed: checkpoint file does not exist: %s", ckpt_path)
             return False, f"SAM2 checkpoint file does not exist: {ckpt_path}"
@@ -931,10 +931,10 @@ class MainWindow(QMainWindow):
 
     def _build_sam2_predictor(self):
         """Create SAM2 with the stored configuration."""
-        logger.info("Building SAM2 predictor (checkpoint=%s, max_side=%s)", self.checkpoint_path, self.max_side)
+        logger.info("Building SAM2 predictor (checkpoint=%s, max_side=%s)", self.sam2_checkpoint_path, self.max_side)
         from src.sam2 import SAM2PredictorWrapper
 
-        predictor = SAM2PredictorWrapper(self.checkpoint_path)
+        predictor = SAM2PredictorWrapper(self.sam2_checkpoint_path)
         predictor.set_max_side(self.max_side)
         logger.info("SAM2 predictor built successfully")
         return predictor

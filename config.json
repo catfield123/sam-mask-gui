@@ -1,6 +1,5 @@
 {
   "sam2_checkpoint_path": "",
-  "checkpoint_path": "",
   "sam3_checkpoint_path": null,
   "sam3_bpe_path": null,
   "keep_models_loaded": false,

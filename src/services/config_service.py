@@ -72,16 +72,9 @@ class ConfigService:
         """Extract the model type from a config dict."""
         return config.get("model_type", "sam2")
 
-    def get_checkpoint_path(self, config: Dict[str, Any]) -> str:
-        """Extract the SAM2 checkpoint path from a config dict.
-
-        For backward compatibility, also checks "checkpoint_path" key.
-        """
-        return config.get("sam2_checkpoint_path", config.get("checkpoint_path", ""))
-
     def get_sam2_checkpoint_path(self, config: Dict[str, Any]) -> str:
         """Extract the SAM2 checkpoint path from a config dict."""
-        return config.get("sam2_checkpoint_path", config.get("checkpoint_path", ""))
+        return config.get("sam2_checkpoint_path", "")
 
     def get_sam3_checkpoint_path(self, config: Dict[str, Any]) -> Optional[str]:
         """Extract the SAM3 checkpoint path from a config dict."""

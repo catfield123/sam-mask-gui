@@ -20,7 +20,7 @@ class PropagationController:
     :class:`BatchSessionController`.
 
     Args:
-        - get_state (callable): Returns ``(checkpoint_path, device,
+        - get_state (callable): Returns ``(sam2_checkpoint_path, device,
           images_dir, save_dir, image_states, sort_index,
           image_list_widget, current_image_path)`` from the main window.
         - update_ui_cb (callable): Called after bulk state changes to

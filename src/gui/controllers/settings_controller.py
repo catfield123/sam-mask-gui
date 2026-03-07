@@ -16,7 +16,7 @@ class SettingsController:
         - config_service (ConfigService): Service for reading/writing the
           JSON config file.
         - get_window_state (callable): Returns a dict with the current
-          window-level state keys: ``checkpoint_path``, ``max_side``,
+          window-level state keys: ``sam2_checkpoint_path``, ``max_side``,
           ``predictor``, ``mask_service``, ``images_dir``, ``save_dir``.
         - set_window_state (callable): Accepts a dict of state updates to
           apply back to the main window.
@@ -57,7 +57,7 @@ class SettingsController:
         ws = self._get()
         dialog = SettingsDialog(
             parent_widget,
-            sam2_checkpoint_path=ws.get("checkpoint_path", ""),
+            sam2_checkpoint_path=ws.get("sam2_checkpoint_path", ""),
             sam3_checkpoint_path=ws.get("sam3_checkpoint_path"),
             sam3_bpe_path=ws.get("sam3_bpe_path"),
             max_side=ws.get("max_side", 1024),
@@ -67,7 +67,7 @@ class SettingsController:
             return False
 
         logger.debug("show_settings: user accepted, applying updates")
-        old_ckpt = ws.get("checkpoint_path", "")
+        old_ckpt = ws.get("sam2_checkpoint_path", "")
         old_sam3_ckpt = ws.get("sam3_checkpoint_path")
         old_sam3_bpe = ws.get("sam3_bpe_path")
         old_max = ws.get("max_side", 1024)
@@ -78,7 +78,7 @@ class SettingsController:
         new_max = dialog.get_max_side()
 
         updates = {
-            "checkpoint_path": new_ckpt,
+            "sam2_checkpoint_path": new_ckpt,
             "sam3_checkpoint_path": new_sam3_ckpt,
             "sam3_bpe_path": new_sam3_bpe,
             "max_side": new_max,
@@ -130,13 +130,13 @@ class SettingsController:
             logger.debug("load_config: no config, skipping restore")
             return
 
-        ckpt = self._cfg.get_checkpoint_path(config)
+        ckpt = self._cfg.get_sam2_checkpoint_path(config)
         sam3_ckpt = self._cfg.get_sam3_checkpoint_path(config)
         sam3_bpe = self._cfg.get_sam3_bpe_path(config)
         max_side = self._cfg.get_max_side(config)
 
         updates = {
-            "checkpoint_path": ckpt or "",
+            "sam2_checkpoint_path": ckpt or "",
             "sam3_checkpoint_path": sam3_ckpt,
             "sam3_bpe_path": sam3_bpe,
             "keep_models_loaded": self._cfg.get_keep_models_loaded(config),
@@ -163,8 +163,7 @@ class SettingsController:
         ws = self._get()
         self._cfg.save(
             {
-                "sam2_checkpoint_path": ws.get("checkpoint_path", ""),
-                "checkpoint_path": ws.get("checkpoint_path", ""),
+                "sam2_checkpoint_path": ws.get("sam2_checkpoint_path", ""),
                 "sam3_checkpoint_path": ws.get("sam3_checkpoint_path"),
                 "sam3_bpe_path": ws.get("sam3_bpe_path"),
                 "keep_models_loaded": ws.get("keep_models_loaded", False),

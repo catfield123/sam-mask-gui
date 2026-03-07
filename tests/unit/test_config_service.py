@@ -31,7 +31,7 @@ class TestConfigServiceLoad:
         self, config_service: ConfigService, temp_config_path: Path
     ) -> None:
         """When config file has valid JSON, load returns the parsed dict."""
-        data = {"max_side": 1024, "checkpoint_path": "/some/path"}
+        data = {"max_side": 1024, "sam2_checkpoint_path": "/some/path"}
         temp_config_path.write_text(json.dumps(data), encoding="utf-8")
         assert config_service.load() == data
 
@@ -64,12 +64,11 @@ class TestConfigServiceGetters:
         """get_model_type returns 'sam2' when key missing."""
         assert config_service.get_model_type({}) == "sam2"
 
-    def test_get_sam2_checkpoint_path_fallback(self, config_service: ConfigService) -> None:
-        """get_sam2_checkpoint_path falls back to checkpoint_path."""
-        config = {"checkpoint_path": "/old/path"}
-        assert config_service.get_sam2_checkpoint_path(config) == "/old/path"
-        config["sam2_checkpoint_path"] = "/new/path"
-        assert config_service.get_sam2_checkpoint_path(config) == "/new/path"
+    def test_get_sam2_checkpoint_path(self, config_service: ConfigService) -> None:
+        """get_sam2_checkpoint_path returns sam2_checkpoint_path or empty string."""
+        assert config_service.get_sam2_checkpoint_path({}) == ""
+        config = {"sam2_checkpoint_path": "/path/to/sam2.pt"}
+        assert config_service.get_sam2_checkpoint_path(config) == "/path/to/sam2.pt"
 
     def test_get_max_side_default(self, config_service: ConfigService) -> None:
         """get_max_side returns 1024 when key missing."""
