@@ -18,14 +18,8 @@ def main() -> None:
     parser.add_argument(
         "--debug",
         action="store_true",
-        default=True,
-        help="Enable debug logging (default: on). Use --no-debug to reduce log volume.",
-    )
-    parser.add_argument(
-        "--no-debug",
-        action="store_false",
-        dest="debug",
-        help="Disable debug logging (INFO and above only).",
+        default=False,
+        help="Enable debug logging. Without this flag, only INFO and above are shown.",
     )
     args = parser.parse_args()
     configure_logging(debug=args.debug)
