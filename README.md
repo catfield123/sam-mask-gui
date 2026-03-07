@@ -26,14 +26,9 @@
 
 ## Contents
 
-- [Contents](#contents)
 - [Features](#features)
 - [Requirements](#requirements)
 - [Installation](#installation)
-  - [1. Clone the repository](#1-clone-the-repository)
-  - [2. Create virtual environment and install dependencies](#2-create-virtual-environment-and-install-dependencies)
-  - [3. Install SAM2 and/or SAM3](#3-install-sam2-andor-sam3)
-  - [4. Download checkpoints](#4-download-checkpoints)
 - [Run](#run)
 - [Usage](#usage)
   - [Keyboard shortcuts](#keyboard-shortcuts)
