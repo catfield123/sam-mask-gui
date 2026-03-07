@@ -26,9 +26,14 @@
 
 ## Contents
 
+- [Contents](#contents)
 - [Features](#features)
 - [Requirements](#requirements)
 - [Installation](#installation)
+  - [1. Clone the repository](#1-clone-the-repository)
+  - [2. Create virtual environment and install dependencies](#2-create-virtual-environment-and-install-dependencies)
+  - [3. Install SAM2 and/or SAM3](#3-install-sam2-andor-sam3)
+  - [4. Download checkpoints](#4-download-checkpoints)
 - [Run](#run)
 - [Usage](#usage)
   - [Keyboard shortcuts](#keyboard-shortcuts)
@@ -43,7 +48,7 @@
 
 - **Point-based segmentation (SAM2):** place positive (left click) and negative (right click) points. Masks update in real time.
 - **Brush refinement:** hold **Shift** for brush mode; paint to add or subtract from the mask. **Shift + scroll** changes brush size. **Ctrl + scroll** zooms; **middle mouse drag** pans.
-- **Alt:** hold **Alt** for mask preview (see current mask without overlay).
+- **Mask preview:** hold **Alt** for mask preview (see current mask without overlay).
 - **Text-prompt segmentation (SAM3):** describe the object in text to segment the current image or a batch of selected images.
 - **Propagate masks (SAM2):** propagate masks from key-frames to all images in order (“Propagate Masks” button).
 - **Grow / shrink mask:** expand or contract the mask boundary by a number of pixels (single image or selected images).
@@ -64,15 +69,11 @@
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/catfield123/sam-mask-gui
+git clone --recurse-submodules https://github.com/catfield123/sam-mask-gui
 cd auto_segmentation
 ```
 
-To use bundled SAM2/SAM3 via submodules:
-
-```bash
-git submodule update --init --recursive
-```
+This clones the repo and initializes SAM2/SAM3 submodules in one go. If you already have cloned this repo without submodules, run `git submodule update --init --recursive`.
 
 ### 2. Create virtual environment and install dependencies
 
@@ -83,14 +84,13 @@ uv venv
 source .venv/bin/activate   # Linux/macOS
 # or:  .venv\Scripts\activate   # Windows
 
-uv pip install -e .
+uv pip install .
 ```
 
-This installs the project in editable mode and all dependencies from `pyproject.toml` (PyQt6, torch, numpy, SAM3-related libs like einops, and setuptools &lt;82 for SAM3 compatibility).
+This installs all dependencies from `pyproject.toml`.
 
-### 3. Install SAM2 and/or SAM3 (optional)
+### 3. Install SAM2 and/or SAM3
 
-The app works with the external `sam2` and `sam3` packages. You can install them from the repo’s submodules (if you ran `git submodule update --init --recursive`):
 
 ```bash
 uv pip install -e vendor/sam2
@@ -98,17 +98,10 @@ uv pip install -e vendor/sam2
 uv pip install -e vendor/sam3
 ```
 
-Alternatively, clone SAM2/SAM3 elsewhere and install in editable mode:
-
-```bash
-git clone https://github.com/facebookresearch/sam2.git /path/to/sam2
-uv pip install -e /path/to/sam2
-```
-
 ### 4. Download checkpoints
 
-- **SAM2**: e.g. [sam2.1_hiera_small.pt](https://github.com/facebookresearch/sam2) (balance of speed and quality). Place the file and set its path in Settings.
-- **SAM3**: Weights are hosted on [Hugging Face (facebook/sam3)](https://huggingface.co/facebook/sam3). The model is **gated**: you must open the model page, request access, and wait until your request is approved before you can download the checkpoint. Then set the checkpoint path in Settings (and optionally the BPE path; see below).
+- **SAM2**: Use the official [`download_ckpts.sh`](https://raw.githubusercontent.com/facebookresearch/sam2/refs/heads/main/checkpoints/download_ckpts.sh) script to download SAM 2.1 checkpoints (or download them manually). Then set the path to the downloaded `.pt` file either in the GUI settings menu or as `sam2_checkpoint_path` in `config.json`.
+- **SAM3**: Weights are hosted on [Hugging Face (facebook/sam3)](https://huggingface.co/facebook/sam3). The model is **gated**: you must open the [model page](https://huggingface.co/facebook/sam3), request access, and wait until your request is approved before you can download the checkpoint. Then set the path to the checkpoint either in the GUI settings menu or as `sam3_checkpoint_path` in `config.json`.
 
 ## Run
 
@@ -186,7 +179,7 @@ pytest tests/ -v                       # Run tests
 
 ## Memory
 
-If you run out of GPU or RAM (e.g. large images or multiple models loaded), use **Settings** and reduce **Max side size** (max_side). This limit applies only while working in the app: images are scaled down for display and for running the models, so less memory is used. **When you save a mask, it is always written at the original image resolution** (upscaled if needed). So you can safely use e.g. **512** or **768** to reduce memory; masks on disk will still be full resolution. Use **0** for no limit (original size in memory, highest use).
+If you run out of GPU or RAM (e.g. large images or multiple models loaded), use **Settings** and reduce **Max side size** (max_side). This limit applies only while working in the app: images are scaled down for display and for running the models, so less memory is used. **When you save a mask, it is always written at the original image resolution** (upscaled if needed). So you can safely use e.g. **512** or **1024** to reduce memory; masks on disk will still be full resolution. Use **0** for no limit (original size in memory, highest use).
 
 ## BPE path (SAM3)
 
@@ -194,8 +187,31 @@ If you run out of GPU or RAM (e.g. large images or multiple models loaded), use 
 
 ## Troubleshooting
 
+- **`No module named '_bz2'` and  `No module named '_lzma'` on Linux (when loading SAM2):** These modules are part of the Python standard library but are built at compile time and require system libraries. If your Python was built without them (e.g. a pre-built binary or pyenv install before installing dev packages), you get this error when SAM2 loads. Fix: install the dev packages, then use a Python built *after* that—e.g. [pyenv](https://github.com/pyenv/pyenv#installation) (see [how to install pyenv](https://github.com/pyenv/pyenv#installation)). In the project directory, set the project Python with `pyenv local 3.13.7` (or your desired version), install the system deps, install that Python so it picks up the libs, then create the venv on that interpreter:
+
+  ```bash
+  # 1. Install system libraries (Debian/Ubuntu)
+  sudo apt install libbz2-dev liblzma-dev xz-utils
+  # On Fedora/RHEL: sudo dnf install bzip2-devel xz-devel
+
+  # 2. Rebuild Python so it links against the new libs (replace 3.13.7 if you use another version).
+  #    uninstall removes this version from pyenv globally; install puts it back, built with the libs.
+  pyenv uninstall -f 3.13.7
+  pyenv install 3.13.7
+
+  # 3. In the project root: pin Python version for this project (pyenv must be installed)
+  pyenv local 3.13.7
+
+  # 4. Create venv with that Python and install the project
+  uv venv
+  ```
+
+  After this, the project uses a Python built with `_bz2` and `_lzma`, and SAM2 should load. The same steps help if you see similar errors for other stdlib modules that depend on system libs.
+
 - **CUDA not available:** The app will run on CPU, but it will be slower. If you expected GPU acceleration, check that CUDA and the matching PyTorch build are installed (e.g. `python -c "import torch; print(torch.cuda.is_available())"`). If that prints `False`, install a CUDA-enabled PyTorch from [pytorch.org](https://pytorch.org). Either way, the app will still run on CPU if no GPU is detected.
+ 
 - **Checkpoint load error:** Ensure the path in Settings is correct, the file exists, and the matching SAM package is installed (`uv pip install -e vendor/sam2` or your SAM path).
+ 
 - **Out of memory:** Lower **max_side** in Settings (see [Memory](#memory) above).
 
 ## License
