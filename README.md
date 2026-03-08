@@ -65,7 +65,7 @@
 
 ```bash
 git clone --recurse-submodules https://github.com/catfield123/sam-mask-gui
-cd auto_segmentation
+cd sam-mask-gui
 ```
 
 This clones the repo and initializes SAM2/SAM3 submodules in one go. If you already have cloned this repo without submodules, run `git submodule update --init --recursive`.
