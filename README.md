@@ -95,7 +95,7 @@ uv pip install -e vendor/sam3
 
 ### 4. Download checkpoints
 
-- **SAM2**: Use the official [`download_ckpts.sh`](https://raw.githubusercontent.com/facebookresearch/sam2/refs/heads/main/checkpoints/download_ckpts.sh) script to download SAM 2.1 checkpoints (or download them manually). Then set the path to the downloaded `.pt` file either in the GUI settings menu or as `sam2_checkpoint_path` in `config.json`.
+- **SAM2**: Use the official [`download_ckpts.sh`](https://raw.githubusercontent.com/facebookresearch/sam2/refs/heads/main/checkpoints/download_ckpts.sh) script to download SAM 2.1 checkpoints (or [download them manually](https://github.com/facebookresearch/sam2?tab=readme-ov-file#download-checkpoints)). Then set the path to the downloaded `.pt` file either in the GUI settings menu or as `sam2_checkpoint_path` in `config.json`.
 - **SAM3**: Weights are hosted on [Hugging Face (facebook/sam3)](https://huggingface.co/facebook/sam3). The model is **gated**: you must open the [model page](https://huggingface.co/facebook/sam3), request access, and wait until your request is approved before you can download the checkpoint. Then set the path to the checkpoint either in the GUI settings menu or as `sam3_checkpoint_path` in `config.json`.
 
 ## Run
