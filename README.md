@@ -26,37 +26,25 @@
 
 ## Demo
 
-<p align="center">
-  <figure style="display: inline-block; margin: 1em;">
-    <img src="assets/keypoints.gif" width=380 />
-    <figcaption style="text-align: center;"><b>Point-based segmentation</b></figcaption>
-  </figure>
-  <figure style="display: inline-block; margin: 1em;">
-    <img src="assets/text_prompt.gif" width=380 />
-    <figcaption style="text-align: center;"><b>Text-prompt segmentation (SAM3)</b></figcaption>
-  </figure>
-</p>
+**Point-based segmentation, text-prompt segmentation:**
 
 <p align="center">
-  <figure style="display: inline-block; margin: 1em;">
-    <img src="assets/brush.gif" width=380 />
-    <figcaption style="text-align: center;"><b>Brush refinement</b></figcaption>
-  </figure>
-  <figure style="display: inline-block; margin: 1em;">
-    <img src="assets/zoom_and_preview.gif" width=380 />
-    <figcaption style="text-align: center;"><b>Zoom and mask preview</b></figcaption>
-  </figure>
+  <img src="assets/keypoints.gif" width=380 />
+  <img src="assets/text_prompt.gif" width=380 />
 </p>
 
+**Brush tool, zoom and mask preview:**
+
 <p align="center">
-  <figure style="display: inline-block; margin: 1em;">
-    <img src="assets/grow.gif" width=380 />
-    <figcaption style="text-align: center;"><b>Grow / shrink mask</b></figcaption>
-  </figure>
-  <figure style="display: inline-block; margin: 1em;">
-    <img src="assets/propagate.gif" width=380 />
-    <figcaption style="text-align: center;"><b>Propagate masks</b></figcaption>
-  </figure>
+  <img src="assets/brush.gif" width=380 />
+  <img src="assets/zoom_and_preview.gif" width=380 />
+</p>
+
+**Grow / shrink mask, propagate masks:**
+
+<p align="center">
+  <img src="assets/grow.gif" width=380 />
+  <img src="assets/propagate.gif" width=380 />
 </p>
 
 ## Contents
