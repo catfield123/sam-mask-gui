@@ -306,8 +306,8 @@ class MainWindow(QMainWindow):
         return self.current_image_path, self.image_states
 
     def _get_list_state(self):
-        """Return ``(images_dir, save_dir, image_states, mask_service)`` for ImageListController."""
-        return self.images_dir, self.save_dir, self.image_states, self.mask_service
+        """Return ``(images_dir, save_dir, image_states, mask_service, max_side)`` for ImageListController."""
+        return self.images_dir, self.save_dir, self.image_states, self.mask_service, self.max_side
 
     def _get_window_state(self):
         """Return a snapshot dict of window-level state for SettingsController."""
@@ -1474,6 +1474,7 @@ class MainWindow(QMainWindow):
                     self.mask_service,
                     display_predictor,
                     self._list_ctrl.update_image_list,
+                    self.max_side,
                 )
 
     def show_settings(self):
@@ -1507,6 +1508,7 @@ class MainWindow(QMainWindow):
             self._left.image_list,
             self.image_states,
             self._list_ctrl.update_mask_counter,
+            self.max_side,
         )
 
     def _load_current_image(self, img_path=None):
@@ -1571,6 +1573,7 @@ class MainWindow(QMainWindow):
                     self.mask_service,
                     display_predictor,
                     self._list_ctrl.update_image_list,
+                    self.max_side,
                 )
                 state = self.image_states.get(self.current_image_path)
 

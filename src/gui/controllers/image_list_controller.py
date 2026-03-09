@@ -24,7 +24,7 @@ class ImageListController:
         - sort_combo: ``QComboBox`` for the sort mode.
         - thumbnail_worker: ``ThumbnailLoaderWorker`` background thread.
         - get_state (callable): Returns ``(images_dir, save_dir, image_states,
-          mask_service)`` from the main window.
+          mask_service, max_side)`` from the main window.
     """
 
     def __init__(self, image_list, mask_counter_label, sort_combo, thumbnail_worker, get_state):
@@ -36,7 +36,7 @@ class ImageListController:
             - sort_combo: ``QComboBox`` for the sort mode.
             - thumbnail_worker: ``ThumbnailLoaderWorker`` background thread.
             - get_state (callable): Returns ``(images_dir, save_dir,
-              image_states, mask_service)`` from the main window.
+              image_states, mask_service, max_side)`` from the main window.
         """
         self._list = image_list
         self._counter_label = mask_counter_label
@@ -69,7 +69,7 @@ class ImageListController:
             - parent_widget (QWidget | None): Parent for info/error dialogs.
         """
         logger.debug("load_images: get_state")
-        images_dir, save_dir, image_states, mask_service = self._get_state()
+        images_dir, save_dir, image_states, mask_service, max_side = self._get_state()
         if images_dir is None:
             logger.debug("load_images: no images_dir")
             return
@@ -97,9 +97,11 @@ class ImageListController:
                     state.mask_saved = True
                     try:
                         if mask_service:
-                            mask_full = mask_service.load_mask(mask_path)
-                            if mask_full is not None:
-                                state.mask = mask_full
+                            mask_scaled = mask_service.load_mask(
+                                mask_path, image_path=img_path, max_side=max_side
+                            )
+                            if mask_scaled is not None:
+                                state.mask = mask_scaled
                     except Exception:
                         pass
 
@@ -132,7 +134,7 @@ class ImageListController:
         Args:
             - sort_index (int): 0 = by name, 1 = unmasked first, 2 = masked first.
         """
-        _, _, image_states, _ = self._get_state()
+        _, _, image_states, _, _ = self._get_state()
         if self._list.count() == 0:
             return
 
@@ -186,7 +188,7 @@ class ImageListController:
 
     def update_image_list(self):
         """Refresh list item labels (e.g. saved-indicator checkmarks)."""
-        _, _, image_states, _ = self._get_state()
+        _, _, image_states, _, _ = self._get_state()
         for i in range(self._list.count()):
             item = self._list.item(i)
             img_path = item.data(Qt.ItemDataRole.UserRole)
@@ -206,7 +208,7 @@ class ImageListController:
 
     def update_mask_counter(self):
         """Recompute and display the ``X/Y`` mask counter."""
-        _, _, image_states, _ = self._get_state()
+        _, _, image_states, _, _ = self._get_state()
         total = len(image_states)
         if total == 0:
             self._counter_label.setText("0/0")

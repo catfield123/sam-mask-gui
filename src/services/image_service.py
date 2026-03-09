@@ -1,7 +1,9 @@
 """Service for discovering images and resolving mask paths."""
 
 from pathlib import Path
-from typing import List
+from typing import List, Optional, Tuple
+
+import cv2
 
 from src.logging_config import get_logger
 
@@ -35,6 +37,22 @@ class ImageService:
         paths = [p for p in sorted(directory.iterdir()) if p.suffix.lower() in IMG_EXTS and p.is_file()]
         logger.info("find_images: found %s images in %s", len(paths), directory)
         return paths
+
+    @staticmethod
+    def get_image_size(image_path: Path) -> Optional[Tuple[int, int]]:
+        """Read image dimensions (height, width) from file.
+
+        Args:
+            - image_path (Path): Path to the image file.
+
+        Returns:
+            - tuple[int, int] | None: ``(height, width)`` or ``None`` if read failed.
+        """
+        img = cv2.imread(str(image_path))
+        if img is None:
+            return None
+        h, w = img.shape[:2]
+        return (h, w)
 
     @staticmethod
     def get_mask_path(image_path: Path, save_dir: Path) -> Path:

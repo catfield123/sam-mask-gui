@@ -550,7 +550,7 @@ class MaskController:
                         next_image_path = nxt.data(0x0100)  # Qt.ItemDataRole.UserRole
 
             mask_path = ImageService.get_mask_path(path, save_dir)
-            if mask_service.save_mask(state.mask, mask_path):
+            if mask_service.save_mask(state.mask, mask_path, path):
                 state.mask_saved = True
                 state.saved_version = state.state_version
                 self._undo.sync_unsaved(state)
@@ -605,8 +605,12 @@ class MaskController:
         image_list,
         image_states: Dict[Path, ImageState],
         update_counter_cb,
+        max_side: int = 0,
     ):
         """Scan all image states and load masks that exist on disk.
+
+        Masks on disk are at original image resolution; they are downscaled to match
+        the app's scaled size for each image (using max_side) before storing in state.
 
         Args:
             - save_dir (Path | None): Directory with saved masks.
@@ -614,6 +618,7 @@ class MaskController:
             - image_list: ``QListWidget`` of images.
             - image_states (dict): Path -> ImageState mapping.
             - update_counter_cb (callable): Refreshes the mask counter.
+            - max_side (int): Max longer side for scaling when loading (0 = no limit).
         """
         if save_dir is None or mask_service is None:
             return
@@ -637,9 +642,11 @@ class MaskController:
                         item.setText(f"✓ {img_path.name}")
                 if state.mask is None:
                     try:
-                        mask_full = mask_service.load_mask(mask_path)
-                        if mask_full is not None:
-                            state.mask = mask_full
+                        mask_scaled = mask_service.load_mask(
+                            mask_path, image_path=img_path, max_side=max_side
+                        )
+                        if mask_scaled is not None:
+                            state.mask = mask_scaled
                     except Exception:
                         pass
 
@@ -651,14 +658,19 @@ class MaskController:
         mask_service: Optional[MaskService],
         predictor,
         update_list_cb,
+        max_side: int = 0,
     ):
         """Load the mask for the currently selected image if it exists on disk.
+
+        The mask is loaded at scaled resolution (using max_side) so it matches the
+        current image display. If predictor is set, mask_logits are updated.
 
         Args:
             - save_dir (Path | None): Mask directory.
             - mask_service (MaskService | None): Mask I/O service.
-            - predictor (SAM2PredictorWrapper | None): Active predictor.
+            - predictor (SAM2PredictorWrapper | None): Active predictor (for logits).
             - update_list_cb (callable): Refreshes list item labels.
+            - max_side (int): Max longer side for scaling when loading (0 = no limit).
         """
         path, _ = self._current()
         state = self._current_state()
@@ -676,13 +688,16 @@ class MaskController:
             return
 
         try:
-            mask_full = mask_service.load_mask(mask_path)
-            if mask_full is None:
+            mask_scaled = mask_service.load_mask(
+                mask_path, image_path=path, max_side=max_side
+            )
+            if mask_scaled is None:
                 return
-            state.mask = mask_full
+            state.mask = mask_scaled
             if self._viewer.image is not None and predictor is not None:
-                state.mask = predictor.downscale_mask(state.mask)
                 state.mask_logits = predictor.mask_to_logits(state.mask)
+                self._viewer.set_mask(state.mask)
+            else:
                 self._viewer.set_mask(state.mask)
         except Exception:
             pass

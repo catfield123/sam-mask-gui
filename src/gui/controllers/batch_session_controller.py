@@ -147,10 +147,25 @@ class BatchSessionController:
                 else:
                     self._session.old_disk_masks[mask_path] = None
 
-            # Write new mask
+            # Write new mask at original image resolution
             if backup.new_mask is not None:
+                size = ImageService.get_image_size(backup.image_path)
+                if size is None:
+                    progress.close()
+                    QMessageBox.warning(
+                        parent_widget,
+                        "Save Error",
+                        f"Cannot read image size for {backup.image_path.name}. Skipping save.",
+                    )
+                    return
+                h0, w0 = size
+                mask_to_save = backup.new_mask
+                if mask_to_save.shape[0] != h0 or mask_to_save.shape[1] != w0:
+                    mask_to_save = cv2.resize(
+                        mask_to_save, (w0, h0), interpolation=cv2.INTER_NEAREST
+                    )
                 mask_path.parent.mkdir(parents=True, exist_ok=True)
-                cv2.imwrite(str(mask_path), backup.new_mask)
+                cv2.imwrite(str(mask_path), mask_to_save)
                 if mask_path not in self._session.saved_mask_paths:
                     self._session.saved_mask_paths.append(mask_path)
 
